@@ -84,7 +84,7 @@ if (!isset($_SESSION['user_id'])) {
     </div>
   </section>
 
-  <!-- NEW: Profile Management Section -->
+  <!-- Profile Management Section -->
   <section class="profile-section">
     <h2>👤 Manage Profile</h2>
     <div class="ad-form-card">
@@ -109,6 +109,27 @@ if (!isset($_SESSION['user_id'])) {
     </div>
   </section>
 
+  <!-- Contact Info Management Section -->
+  <section class="profile-section">
+    <h2>📞 Contact Information</h2>
+    <div class="ad-form-card">
+      <form id="contact-form">
+        <label for="contact-phone">Phone Number (optional)</label>
+        <input type="tel" id="contact-phone" placeholder="e.g. +1 234 567 8900" />
+
+        <label class="contact-toggle-label">
+          <span>Show phone number on my ads</span>
+          <input type="checkbox" id="show-contact" />
+        </label>
+
+        <div style="display: flex; gap: 10px; margin-top: 15px;">
+          <button type="submit" class="btn-primary">Save Contact Info</button>
+          <button type="button" id="clear-contact-btn" class="btn-secondary">Clear Contact Info</button>
+        </div>
+      </form>
+    </div>
+  </section>
+
   <!-- Chat Modal -->
   <div class="chat-modal" id="chatModal">
     <div class="chat-modal-content">
@@ -125,6 +146,31 @@ if (!isset($_SESSION['user_id'])) {
   <h2>Your Ads</h2>
   <div id="user-ads-container"></div>
 </main>
+
+<!-- Edit Ad Modal -->
+<div class="auth-modal" id="editAdModal">
+  <div class="auth-modal-content">
+    <span class="close-btn" onclick="closeEditAdModal()">&times;</span>
+    <h3>✏️ Edit Ad</h3>
+    <form id="edit-ad-form">
+      <input type="hidden" id="edit-ad-id" />
+      
+      <label for="edit-title">Ad Title</label>
+      <input type="text" id="edit-title" required />
+
+      <label for="edit-price">Price ($)</label>
+      <input type="number" id="edit-price" step="0.01" min="0" required />
+
+      <label for="edit-location">Location</label>
+      <input type="text" id="edit-location" required />
+
+      <label for="edit-description">Description</label>
+      <textarea id="edit-description" rows="5" required></textarea>
+
+      <button type="submit" class="btn-primary">Save Changes</button>
+    </form>
+  </div>
+</div>
 
 <!-- Chat Inbox Modal -->
 <div class="chat-inbox-modal" id="chat-inbox-modal">

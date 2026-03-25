@@ -205,40 +205,66 @@ function renderAds(container, ads) {
     const isOwner = ad.user_id == sessionUserId;
     const formattedPrice = ad.price ? `$${parseFloat(ad.price).toFixed(2)}` : 'Free';
     const locationDisplay = ad.location ? `📍 ${escapeHtml(ad.location)}` : '';
-
+    
+    // Star rating display - FIXED
+    const avgRating = ad.avg_rating ? parseFloat(ad.avg_rating) : 0;
+    const ratingCount = ad.rating_count ? parseInt(ad.rating_count) : 0;
+    const starsHtml = renderStars(avgRating);
+    const ratingHtml = ratingCount > 0 ? `
+      <div class="ad-rating" style="display: flex; align-items: center; gap: 5px; margin-bottom: 10px;">
+        ${starsHtml}
+        <span style="color: #7f8c8d; font-size: 0.9rem;">(${ratingCount})</span>
+      </div>
+    ` : '';
+    
+    // Contact info display (hidden by default) - PHONE ONLY
+    const hasContact = ad.phone && ad.show_contact == 1;
+    const contactHtml = hasContact ? `
+      <div class="contact-info" id="contact-${ad.id}" style="display: none; margin-top: 10px; padding: 10px; background: #f0f0f0; border-radius: 6px;">
+        ${ad.phone ? `<p>📞 <a href="tel:${escapeHtml(ad.phone)}">${escapeHtml(ad.phone)}</a></p>` : ''}
+      </div>
+      <button class="show-contact-btn" data-ad-id="${ad.id}" style="margin-top: 10px; padding: 8px 12px; background-color: #27ae60; color: white; border: none; border-radius: 4px; cursor: pointer;">📞 Show Contact</button>
+    ` : '';
+    
     container.innerHTML += `
       <div class="ad-card">
         <h3>${escapeHtml(ad.title)}</h3>
-        
-        <!-- Price and Location -->
+        ${ratingHtml}
         <div style="display: flex; justify-content: space-between; margin-bottom: 10px; color: #555; font-weight: bold;">
           <span style="color: #27ae60; font-size: 1.1rem;">${formattedPrice}</span>
           <span>${locationDisplay}</span>
         </div>
-        
         <p>${escapeHtml(ad.description)}</p>
         <small>Posted by ${escapeHtml(ad.username)}</small>
-
-        <!-- Chat Button (only for non-owners) -->
+        ${contactHtml}
         ${!isOwner && sessionUserId !== 0 ? `
           <button class="chat-btn" data-ad-id="${ad.id}" data-to-user-id="${ad.user_id}">
             💬 Chat with ${escapeHtml(ad.username)}
           </button>
         ` : ''}
-
-        <!-- Comment Section -->
         <div class="ad-comments" data-ad-id="${ad.id}">
           <h4>💬 Comments</h4>
           <div class="comment-list" id="comments-${ad.id}"></div>
           <form class="comment-form" style="display: none;">
-            <textarea placeholder="Write a comment..." required></textarea>
+            <div class="rating-input" style="margin-bottom: 10px;">
+              <label>Rating: <span style="color: #e74c3c;">*</span></label>
+              <div class="star-rating" data-ad-id="${ad.id}">
+                <span class="star" data-value="1">☆</span>
+                <span class="star" data-value="2">☆</span>
+                <span class="star" data-value="3">☆</span>
+                <span class="star" data-value="4">☆</span>
+                <span class="star" data-value="5">☆</span>
+              </div>
+              <input type="hidden" class="selected-rating" data-ad-id="${ad.id}" value="0" />
+            </div>
+            <textarea placeholder="Write a comment (optional)..." style="height: 80px;"></textarea>
             <button type="submit">Post Comment</button>
           </form>
         </div>
       </div>`;
   });
-
-  // Attach chat button listeners after rendering
+  
+  // Attach chat button listeners
   document.querySelectorAll('.chat-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const adId = btn.getAttribute('data-ad-id');
@@ -246,34 +272,119 @@ function renderAds(container, ads) {
       openChat(adId, toUserId);
     });
   });
+  
+  // Attach show contact button listeners
+  document.querySelectorAll('.show-contact-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const adId = btn.getAttribute('data-ad-id');
+      const contactDiv = document.getElementById(`contact-${adId}`);
+      if (contactDiv) {
+        if (contactDiv.style.display === 'none') {
+          contactDiv.style.display = 'block';
+          btn.textContent = '🔒 Hide Contact';
+        } else {
+          contactDiv.style.display = 'none';
+          btn.textContent = '📞 Show Contact';
+        }
+      }
+    });
+  });
+  
+  // Attach star rating listeners
+  document.querySelectorAll('.star-rating').forEach(rating => {
+    const adId = rating.getAttribute('data-ad-id');
+    const stars = rating.querySelectorAll('.star');
+    const hiddenInput = rating.parentElement.querySelector('.selected-rating');
+    
+    stars.forEach(star => {
+      star.addEventListener('click', () => {
+        const value = parseInt(star.getAttribute('data-value'));
+        hiddenInput.value = value;
+        updateStars(stars, value);
+      });
+      
+      star.addEventListener('mouseenter', () => {
+        const value = parseInt(star.getAttribute('data-value'));
+        updateStars(stars, value);
+      });
+      
+      star.addEventListener('mouseleave', () => {
+        const currentValue = parseInt(hiddenInput.value);
+        updateStars(stars, currentValue);
+      });
+    });
+  });
+}
+
+// Helper function to render stars
+function renderStars(rating) {
+  let html = '<div style="color: #f39c12; font-size: 1.2rem;">';
+  for (let i = 1; i <= 5; i++) {
+    if (i <= rating) {
+      html += '★';
+    } else {
+      html += '☆';
+    }
+  }
+  html += '</div>';
+  return html;
+}
+
+// Helper function to update star display
+function updateStars(stars, value) {
+  stars.forEach(star => {
+    const starValue = parseInt(star.getAttribute('data-value'));
+    if (starValue <= value) {
+      star.textContent = '★';
+      star.style.color = '#f39c12';
+    } else {
+      star.textContent = '☆';
+      star.style.color = '#ccc';
+    }
+  });
 }
 
 function attachCommentFormListener() {
   const adsContainer = document.getElementById('ads-container');
   if (!adsContainer || adsContainer.dataset.commentListenerAttached) return;
-
+  
   adsContainer.addEventListener('submit', async function (e) {
-    const form = e.target.closest('.comment-form');
-    if (!form) return;
-    e.preventDefault();
-
-    const adEl = form.closest('.ad-comments');
-    const adId = adEl.getAttribute('data-ad-id');
-    const textarea = form.querySelector('textarea');
-    const commentText = textarea.value.trim();
-
-    if (!commentText) return;
-
-    const result = await postComment(adId, commentText);
-    alert(result.message);
-
-    if (result.success) {
-      textarea.value = '';
-      const list = document.getElementById(`comments-${adId}`);
-      await loadCommentsForAd(adId, list);
-    }
+      const form = e.target.closest('.comment-form');
+      if (!form) return;
+      e.preventDefault();
+      
+      const adEl = form.closest('.ad-comments');
+      const adId = adEl.getAttribute('data-ad-id');
+      const textarea = form.querySelector('textarea');
+      const commentText = textarea.value.trim();
+      const ratingInput = form.querySelector('.selected-rating');
+      const rating = parseInt(ratingInput.value);
+      
+      // Rating is now MANDATORY
+      if (rating < 1 || rating > 5) {
+          alert('Please select a rating (1-5 stars)');
+          return;
+      }
+      
+      try {
+          const result = await postComment(adId, commentText, rating);
+          alert(result.message);
+          
+          if (result.success) {
+              textarea.value = '';
+              ratingInput.value = 0;
+              updateStars(form.querySelectorAll('.star'), 0);
+              const list = document.getElementById(`comments-${adId}`);
+              await loadCommentsForAd(adId, list);
+              loadAds(); // Reload to update average rating
+          }
+          // If result.success is false, the alert already shows the error message
+          // (e.g., "You have already rated this ad")
+      } catch (err) {
+          console.error("Post comment error:", err);
+          alert("Failed to post comment. Please try again.");
+      }
   });
-
   adsContainer.dataset.commentListenerAttached = true;
 }
 
@@ -292,34 +403,42 @@ function loadAllComments() {
 
 async function loadCommentsForAd(adId, container) {
   if (!container) return;
-
+  
   try {
     const res = await fetch(`api/comments.php?ad_id=${adId}`);
-
-    let comments;
+    let data;
     try {
-      comments = await res.json();
+      data = await res.json();
     } catch (err) {
       console.error("Invalid JSON from comments.php", err);
       container.innerHTML = '<p>Failed to load comments.</p>';
       return;
     }
-
+    
+    const comments = data.comments || [];
     container.innerHTML = '';
-
+    
     if (comments.length === 0) {
       container.innerHTML = '<p>No comments yet.</p>';
       return;
     }
-
+    
     comments.forEach(c => {
       const isOwner = c.user_id && sessionUserId && c.user_id == sessionUserId;
       const canDelete = isOwner || (typeof isAdmin !== 'undefined' && isAdmin);
-
+      
+      // Show rating stars for each comment
+      const ratingHtml = c.rating ? `
+        <div style="color: #f39c12; margin-bottom: 5px;">
+          ${renderStars(c.rating)}
+        </div>
+      ` : '';
+      
       container.innerHTML += `
         <div class="comment-item" id="comment-${c.id}" data-user-id="${c.user_id}">
+          ${ratingHtml}
           <strong>${escapeHtml(c.username)}</strong><br/>
-          <span class="comment-text">${escapeHtml(c.comment)}</span>
+          <span class="comment-text">${escapeHtml(c.comment || '')}</span>
           ${canDelete ? `
             <div class="comment-actions">
               <button class="edit-btn">Edit</button>
@@ -327,12 +446,11 @@ async function loadCommentsForAd(adId, container) {
               <button class="delete-btn">Delete</button>
             </div>
           ` : ''}
-          <textarea class="edit-input" style="display:none;">${escapeHtml(c.comment)}</textarea>
+          <textarea class="edit-input" style="display:none;">${escapeHtml(c.comment || '')}</textarea>
         </div>`;
     });
-
+    
     attachCommentEventListeners(container);
-
   } catch (err) {
     console.error("Failed to load comments:", err);
     container.innerHTML = '<p>Failed to load comments.</p>';
@@ -414,18 +532,23 @@ function attachCommentEventListeners(container) {
   });
 }
 
-async function postComment(adId, commentText) {
-  const res = await fetch('api/comments.php', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
+async function postComment(adId, commentText, rating = 0) {
+  const body = {
       action: 'post_comment',
       ad_id: adId,
-      comment: commentText
-    })
+      comment: commentText,
+      rating: rating
+  };
+  
+  const res = await fetch('api/comments.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
   });
-
-  return await res.json();
+  
+  // Parse response regardless of status code
+  const data = await res.json();
+  return data;
 }
 
 // ====== Dashboard: Post Ad (WITH PRICE & LOCATION) ======
@@ -483,7 +606,7 @@ async function loadUserAds() {
     container.innerHTML = '';
 
     if (ads.length === 0) {
-      container.innerHTML = '<p>You havent posted any ads yet.</p>';
+      container.innerHTML = '<p>You haven\'t posted any ads yet.</p>';
       return;
     }
 
@@ -492,7 +615,7 @@ async function loadUserAds() {
       const locationDisplay = ad.location ? `📍 ${escapeHtml(ad.location)}` : '';
 
       container.innerHTML += `
-        <div class="ad-card">
+        <div class="ad-card" data-ad-id="${ad.id}">
           <h3>${escapeHtml(ad.title)}</h3>
           <div style="display: flex; justify-content: space-between; margin-bottom: 10px; color: #555; font-weight: bold;">
             <span style="color: #27ae60; font-size: 1.1rem;">${formattedPrice}</span>
@@ -500,7 +623,46 @@ async function loadUserAds() {
           </div>
           <p>${escapeHtml(ad.description)}</p>
           <small>Posted by ${escapeHtml(ad.username)}</small>
+          
+          <!-- Ad Action Buttons -->
+          <div class="ad-actions" style="margin-top: 15px;">
+            <button class="edit-ad-btn" data-ad-id="${ad.id}" data-title="${escapeHtml(ad.title)}" data-price="${ad.price}" data-location="${escapeHtml(ad.location)}" data-description="${escapeHtml(ad.description)}">✏️ Edit</button>
+            <button class="delete-ad-btn" data-ad-id="${ad.id}">🗑️ Delete</button>
+            <button class="toggle-comments-btn" data-ad-id="${ad.id}">💬 Show Comments</button>
+          </div>
+          
+          <!-- Comments Section (hidden by default) -->
+          <div class="ad-comments-section" id="ad-comments-${ad.id}" style="display: none; margin-top: 15px; padding: 10px; background: #f9f9f9; border-radius: 6px;">
+            <h4>Comments on this ad:</h4>
+            <div class="comment-list" id="dashboard-comments-${ad.id}"></div>
+          </div>
         </div>`;
+    });
+
+    // Attach action button listeners
+    container.querySelectorAll('.edit-ad-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const adId = btn.getAttribute('data-ad-id');
+        const title = btn.getAttribute('data-title');
+        const price = btn.getAttribute('data-price');
+        const location = btn.getAttribute('data-location');
+        const description = btn.getAttribute('data-description');
+        openEditAdModal(adId, title, price, location, description);
+      });
+    });
+
+    container.querySelectorAll('.delete-ad-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const adId = btn.getAttribute('data-ad-id');
+        deleteAd(adId);
+      });
+    });
+
+    container.querySelectorAll('.toggle-comments-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const adId = btn.getAttribute('data-ad-id');
+        toggleAdComments(adId);
+      });
     });
 
   } catch (err) {
@@ -510,6 +672,119 @@ async function loadUserAds() {
       container.innerHTML = '<p>Failed to load your ads.</p>';
     }
   }
+}
+
+// ====== Ad Management Functions ======
+function openEditAdModal(adId, title, price, location, description) {
+  document.getElementById('edit-ad-id').value = adId;
+  document.getElementById('edit-title').value = title;
+  document.getElementById('edit-price').value = price;
+  document.getElementById('edit-location').value = location;
+  document.getElementById('edit-description').value = description;
+  document.getElementById('editAdModal').style.display = 'block';
+}
+
+function closeEditAdModal() {
+  document.getElementById('editAdModal').style.display = 'none';
+}
+
+function toggleAdComments(adId) {
+  const commentsSection = document.getElementById(`ad-comments-${adId}`);
+  const btn = document.querySelector(`.toggle-comments-btn[data-ad-id="${adId}"]`);
+  
+  if (commentsSection.style.display === 'none') {
+    commentsSection.style.display = 'block';
+    btn.textContent = '💬 Hide Comments';
+    loadDashboardAdComments(adId);
+  } else {
+    commentsSection.style.display = 'none';
+    btn.textContent = '💬 Show Comments';
+  }
+}
+
+async function loadDashboardAdComments(adId) {
+  const container = document.getElementById(`dashboard-comments-${adId}`);
+  if (!container) return;
+
+  try {
+    const res = await fetch(`api/comments.php?ad_id=${adId}`);
+    const comments = await res.json();
+
+    container.innerHTML = '';
+
+    if (comments.length === 0) {
+      container.innerHTML = '<p>No comments yet.</p>';
+      return;
+    }
+
+    comments.forEach(c => {
+      container.innerHTML += `
+        <div class="comment-item">
+          <strong>${escapeHtml(c.username)}</strong><br/>
+          <span>${escapeHtml(c.comment)}</span>
+        </div>`;
+    });
+
+  } catch (err) {
+    console.error("Failed to load ad comments:", err);
+    container.innerHTML = '<p>Failed to load comments.</p>';
+  }
+}
+
+async function deleteAd(adId) {
+  if (!confirm("Are you sure you want to delete this ad? This will also delete all comments.")) return;
+
+  try {
+    const res = await fetch(`api/ads.php?id=${adId}`, {
+      method: 'DELETE'
+    });
+
+    const data = await res.json();
+    alert(data.message);
+
+    if (data.success) {
+      loadUserAds();
+      loadAds();
+    }
+  } catch (err) {
+    console.error("Failed to delete ad:", err);
+    alert("Failed to delete ad");
+  }
+}
+
+// Edit Ad Form Handler
+const editAdForm = document.getElementById('edit-ad-form');
+if (editAdForm && !editAdForm.dataset.submitted) {
+  editAdForm.addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    const adId = document.getElementById('edit-ad-id').value;
+    const title = document.getElementById('edit-title').value.trim();
+    const price = document.getElementById('edit-price').value.trim();
+    const location = document.getElementById('edit-location').value.trim();
+    const description = document.getElementById('edit-description').value.trim();
+
+    try {
+      const res = await fetch('api/ads.php', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ad_id: adId, title, price, location, description })
+      });
+
+      const data = await res.json();
+      alert(data.message);
+
+      if (data.success) {
+        closeEditAdModal();
+        loadUserAds();
+        loadAds();
+      }
+    } catch (err) {
+      console.error("Failed to update ad:", err);
+      alert("Failed to update ad");
+    }
+  });
+  editAdForm.dataset.submitted = true;
 }
 
 // ====== Admin Panel Functions ======
@@ -862,16 +1137,90 @@ async function loadUserProfile() {
   try {
     const res = await fetch('api/profile.php');
     const data = await res.json();
-    
     if (data.success && data.user) {
       const currentUsernameInput = document.getElementById('current-username');
       if (currentUsernameInput) {
         currentUsernameInput.value = data.user.username;
       }
+      // Load contact info - PHONE ONLY
+      const contactPhone = document.getElementById('contact-phone');
+      const showContact = document.getElementById('show-contact');
+      if (contactPhone) contactPhone.value = data.user.phone || '';
+      if (showContact) showContact.checked = data.user.show_contact == 1;
     }
   } catch (err) {
     console.error("Failed to load profile:", err);
   }
+}
+
+// Contact Form Handler
+const contactForm = document.getElementById('contact-form');
+if (contactForm && !contactForm.dataset.submitted) {
+  contactForm.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const phone = document.getElementById('contact-phone').value.trim();
+    const showContact = document.getElementById('show-contact').checked ? 1 : 0;
+    
+    try {
+      const res = await fetch('api/profile.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'update_contact',
+          phone: phone,
+          show_contact: showContact
+        })
+      });
+      
+      const data = await res.json();
+      alert(data.message);
+      
+      if (data.success) {
+        loadUserProfile();
+        loadAds();
+        loadUserAds();
+      }
+    } catch (err) {
+      console.error("Contact update error:", err);
+      alert("An error occurred while updating contact info");
+    }
+  });
+  contactForm.dataset.submitted = true;
+}
+
+// Clear Contact Info Button
+const clearContactBtn = document.getElementById('clear-contact-btn');
+if (clearContactBtn) {
+  clearContactBtn.addEventListener('click', async function() {
+    if (!confirm("Clear your contact information? This will hide it from all your ads.")) return;
+    
+    try {
+      const res = await fetch('api/profile.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'update_contact',
+          phone: '',
+          show_contact: 0
+        })
+      });
+      
+      const data = await res.json();
+      alert(data.message);
+      
+      if (data.success) {
+        document.getElementById('contact-phone').value = '';
+        document.getElementById('show-contact').checked = false;
+        loadUserProfile();
+        loadAds();
+        loadUserAds();
+      }
+    } catch (err) {
+      console.error("Clear contact error:", err);
+      alert("Failed to clear contact info");
+    }
+  });
 }
 
 async function handleProfileUpdate(e) {

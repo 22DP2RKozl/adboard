@@ -248,6 +248,178 @@ body {
   color: white;
 }
 
+/* ====== Star Rating ====== */
+.ad-rating {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 10px;
+}
+
+.star-rating {
+  display: flex;
+  gap: 5px;
+  cursor: pointer;
+}
+
+.star-rating .star {
+  font-size: 1.5rem;
+  color: #ccc;
+  transition: color 0.2s;
+}
+
+.star-rating .star:hover,
+.star-rating .star.active {
+  color: #f39c12;
+}
+
+.rating-input {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.rating-input label {
+  font-weight: bold;
+  color: #333;
+}
+
+.comment-item .star-rating {
+  font-size: 1.2rem;
+}
+
+/* ====== Ad Action Buttons ====== */
+.ad-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 15px;
+}
+
+.ad-actions button {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background-color 0.3s ease;
+}
+
+.edit-ad-btn {
+  background-color: #f39c12;
+  color: white;
+}
+
+.edit-ad-btn:hover {
+  background-color: #e67e22;
+}
+
+.delete-ad-btn {
+  background-color: #e74c3c;
+  color: white;
+}
+
+.delete-ad-btn:hover {
+  background-color: #c0392b;
+}
+
+.toggle-comments-btn {
+  background-color: #3498db;
+  color: white;
+}
+
+.toggle-comments-btn:hover {
+  background-color: #2980b9;
+}
+
+.ad-comments-section {
+  margin-top: 15px;
+  padding: 10px;
+  background: #f9f9f9;
+  border-radius: 6px;
+}
+
+.ad-comments-section h4 {
+  margin-bottom: 10px;
+  color: #2c3e50;
+}
+
+/* ====== Contact Info Section ====== */
+.contact-info {
+  margin-top: 10px;
+  padding: 10px;
+  background: #f0f0f0;
+  border-radius: 6px;
+}
+
+.contact-info p {
+  margin: 5px 0;
+  font-size: 0.95rem;
+}
+
+.contact-info a {
+  color: #3498db;
+  text-decoration: none;
+}
+
+.contact-info a:hover {
+  text-decoration: underline;
+}
+
+.show-contact-btn {
+  margin-top: 10px;
+  padding: 8px 12px;
+  background-color: #27ae60;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.show-contact-btn:hover {
+  background-color: #219a52;
+}
+
+.btn-secondary {
+  background-color: #e74c3c;
+  color: white;
+  padding: 12px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.btn-secondary:hover {
+  background-color: #c0392b;
+}
+
+/* Contact Toggle Label */
+.contact-toggle-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  cursor: pointer;
+  margin-top: 15px;
+  padding: 10px;
+  background: #f9f9f9;
+  border-radius: 6px;
+}
+
+.contact-toggle-label span {
+  flex: 1;
+  font-weight: 500;
+  color: #333;
+}
+
+.contact-toggle-label input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
 /* Chat Section */
 /* ====== Chat Inbox ====== */
 .chat-inbox-modal {

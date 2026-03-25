@@ -13,7 +13,7 @@ $userId = $_SESSION['user_id'];
 
 // GET - Get current user profile data
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-    $sql = "SELECT id, username, email FROM users WHERE id = '$userId'";
+    $sql = "SELECT id, username, email, phone, show_contact FROM users WHERE id = '$userId'";
     $result = $conn->query($sql);
     
     if ($result && $result->num_rows > 0) {
@@ -32,7 +32,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 // POST - Update profile
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $data = json_decode(file_get_contents('php://input'), true);
+    $action = $data['action'] ?? 'update_profile';
     
+    // Handle contact info update - PHONE ONLY
+    if ($action === 'update_contact') {
+        $phone = isset($data['phone']) ? trim($data['phone']) : '';
+        $showContact = isset($data['show_contact']) ? (int)$data['show_contact'] : 0;
+        
+        $sql = "UPDATE users SET phone = '$phone', show_contact = '$showContact' WHERE id = '$userId'";
+        
+        if ($conn->query($sql) === TRUE) {
+            echo json_encode(['success' => true, 'message' => 'Contact info updated']);
+        } else {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Failed to update contact info', 'error' => $conn->error]);
+        }
+        exit;
+    }
+    
+    // Handle profile update (username/password)
     $newUsername = isset($data['username']) ? trim($data['username']) : '';
     $newPassword = isset($data['password']) ? $data['password'] : '';
     $confirmPassword = isset($data['confirm_password']) ? $data['confirm_password'] : '';
@@ -51,7 +69,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     // Validate new username (if provided)
     if (!empty($newUsername)) {
-        // Check if username is already taken
         $checkUsernameSql = "SELECT id FROM users WHERE username = '$newUsername' AND id != '$userId'";
         $checkUsernameResult = $conn->query($checkUsernameSql);
         
